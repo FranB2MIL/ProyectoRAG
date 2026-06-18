@@ -1,4 +1,5 @@
 using ProyectoRAG.Application.Interfaces;
+using ProyectoRAG.Infrastructure.Repositories;
 using ProyectoRAG.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,10 @@ builder.Services.AddHttpClient<IEmbeddingService, VoyageEmbeddingService>(client
     Console.WriteLine($"API Key loaded: {(string.IsNullOrEmpty(apiKey) ? "NOT FOUND" : "OK")}");
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 });
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddSingleton<IDocumentRepository>(
+    new DocumentRepository(connectionString!));
 
 var app = builder.Build();
 
