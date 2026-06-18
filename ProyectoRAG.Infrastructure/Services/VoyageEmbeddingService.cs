@@ -21,7 +21,7 @@ public class VoyageEmbeddingService : IEmbeddingService
 
     public async Task<double[][]> GenerateEmbeddingsAsync(string[] texts)
     {
-        var body = new { input = texts, model = "voyage-03" };
+        var body = new { input = texts, model = "voyage-3" };
         var response = await _httpClient.PostAsJsonAsync("https://api.voyageai.com/v1/embeddings", body);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
