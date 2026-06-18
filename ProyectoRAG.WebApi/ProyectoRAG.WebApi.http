@@ -1,0 +1,6 @@
+@ProyectoRAG.WebApi_HostAddress = http://localhost:5218
+
+GET {{ProyectoRAG.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
