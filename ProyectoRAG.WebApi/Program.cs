@@ -13,6 +13,9 @@ builder.Services.AddHttpClient<IEmbeddingService, VoyageEmbeddingService>(client
     Console.WriteLine($"API Key loaded: {(string.IsNullOrEmpty(apiKey) ? "NOT FOUND" : "OK")}");
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 });
+var anthropicApiKey = builder.Configuration["Anthropic:ApiKey"];
+builder.Services.AddSingleton<IChatService>(
+    new AnthropicChatService(anthropicApiKey!));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddSingleton<IDocumentRepository>(

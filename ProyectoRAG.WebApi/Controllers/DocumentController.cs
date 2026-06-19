@@ -10,13 +10,15 @@ public class DocumentsController : ControllerBase
 {
     private readonly IDocumentRepository _repository;
     private readonly IEmbeddingService _embeddingService;
-
+    private readonly IChatService _chatService;
     public DocumentsController(
         IDocumentRepository repository,
-        IEmbeddingService embeddingService)
+        IEmbeddingService embeddingService,
+        IChatService chatService)
     {
         _repository = repository;
         _embeddingService = embeddingService;
+        _chatService = chatService;
     }
 
     [HttpPost("index")]
@@ -33,5 +35,14 @@ public class DocumentsController : ControllerBase
         var embedding = await _embeddingService.GenerateEmbeddingAsync(request.Query);
         var results = await _repository.SearchSimilarAsync(embedding, request.TopK);
         return Ok(results);
+    }
+
+    [HttpPost("ask")]
+    public async Task<IActionResult> Ask([FromBody] SearchRequest request)
+    {
+        var embedding = await _embeddingService.GenerateEmbeddingAsync(request.Query);
+        var relevantChunks = await _repository.SearchSimilarAsync(embedding, request.TopK);
+        var answer = await _chatService.AskAsync(request.Query, relevantChunks);
+        return Ok(new { answer });
     }
 }
