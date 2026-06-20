@@ -16,9 +16,11 @@ Question → Voyage AI (embedding) → pgvector (similarity search) → Anthropi
 
 - **.NET 9** — Clean Architecture (Domain / Application / Infrastructure / WebApi)
 - **Voyage AI** — text embeddings (`voyage-3`, 1024 dimensions)
-- **PostgreSQL + pgvector** — vector storage and cosine similarity search, running in Docker
+- **PostgreSQL + pgvector** — vector storage and cosine similarity search
 - **Anthropic API** — final answer generation (`claude-sonnet-4-6`)
 - **Npgsql + Pgvector.NET** — database access from C#
+- **ClosedXML** — reading tabular data from `.xlsx` files for bulk indexing
+- **Docker + Docker Compose** — the entire stack (API + database) runs in containers
 
 ## Architecture
 
@@ -42,6 +44,52 @@ This means any provider can be swapped without touching business logic — e.g. 
 - An [Anthropic API](https://platform.claude.com) key
 
 ## Setup
+
+### Option A — Docker Compose (recommended)
+
+This runs the entire stack — API and database — with a single command. No need to install .NET or PostgreSQL locally.
+
+**1. Clone the repo**
+
+```bash
+git clone https://github.com/your-username/ProyectoRAG.git
+cd ProyectoRAG
+```
+
+**2. Create a `.env` file** in the project root with your API keys:
+
+```env
+VOYAGE_API_KEY=your-voyage-api-key
+ANTHROPIC_API_KEY=your-anthropic-api-key
+```
+
+**3. Start everything**
+
+```bash
+docker compose up --build
+```
+
+The API will be available at `http://localhost:5218`. The database schema (pgvector extension + `documents` table) needs to be created once — see step 4 below.
+
+**4. Create the schema** (first run only)
+
+```bash
+docker exec -it proyectorag-postgres psql -U postgres -d proyectorag
+```
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    embedding vector(1024)
+);
+```
+
+### Option B — Manual setup (without Docker for the API)
+
+If you prefer running the WebApi directly with `dotnet run` while still using Docker for the database:
 
 **1. Clone and restore**
 
@@ -121,6 +169,21 @@ Content-Type: application/json
 
 Returns the `topK` most semantically similar stored documents, ranked by relevance. No LLM call involved — pure vector search.
 
+### Import vehicles from Excel
+
+```http
+POST /api/documents/import-excel
+Content-Type: multipart/form-data
+
+file: <your-file.xlsx>
+```
+
+Reads each row as a vehicle record, generates embeddings for all rows in a single batched request, and indexes them. Expects columns in this order: Branch, Class, Year, Model, Color, Plate, Kilometers, Sale Price.
+
+```json
+{ "message": "22 vehicles indexed successfully" }
+```
+
 ### Ask a question (full RAG pipeline)
 
 ```http
@@ -138,10 +201,12 @@ Embeds the question, retrieves relevant context from pgvector, and asks Claude t
 
 ## Project status
 
-This is a learning / portfolio project demonstrating an end-to-end RAG pipeline with proper architectural separation between providers and business logic. Possible next steps:
-- Importing tabular data (CSV/Excel) as a bulk source for indexing
+This is a learning / portfolio project demonstrating an end-to-end RAG pipeline with proper architectural separation between providers and business logic. Completed so far: embeddings, vector search, LLM-generated answers, bulk Excel import, and full containerization with Docker Compose.
+
+Possible next steps:
+- A router that decides between semantic search (RAG) and structured queries (Text-to-SQL) depending on the question — useful for aggregate questions like "the cheapest car" or "how many Corollas are there"
 - A React frontend for interacting with the API visually
-- Containerizing the WebApi itself (not just the database)
+- Deploying the containerized stack to a cloud provider (Azure, AWS)
 
 ## License
 
