@@ -11,14 +11,17 @@ public class DocumentsController : ControllerBase
     private readonly IDocumentRepository _repository;
     private readonly IEmbeddingService _embeddingService;
     private readonly IChatService _chatService;
+    private readonly IExcelReader _excelReader;
     public DocumentsController(
         IDocumentRepository repository,
         IEmbeddingService embeddingService,
-        IChatService chatService)
+        IChatService chatService,
+        IExcelReader excelReader)
     {
         _repository = repository;
         _embeddingService = embeddingService;
         _chatService = chatService;
+        _excelReader = excelReader;
     }
 
     [HttpPost("index")]
@@ -44,5 +47,25 @@ public class DocumentsController : ControllerBase
         var relevantChunks = await _repository.SearchSimilarAsync(embedding, request.TopK);
         var answer = await _chatService.AskAsync(request.Query, relevantChunks);
         return Ok(new { answer });
+    }
+
+    [HttpPost("import-excel")]
+    public async Task<IActionResult> ImportExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded.");
+
+        using var stream = file.OpenReadStream();
+        var vehicles = _excelReader.ReadVehicles(stream).ToList();
+
+        var texts = vehicles.Select(v => v.ToEmbeddingText()).ToArray();
+        var embeddings = await _embeddingService.GenerateEmbeddingsAsync(texts);
+
+        for (int i = 0; i < vehicles.Count; i++)
+        {
+            await _repository.SaveDocumentAsync(texts[i], embeddings[i]);
+        }
+
+        return Ok(new { message = $"{vehicles.Count} vehicles indexed successfully" });
     }
 }

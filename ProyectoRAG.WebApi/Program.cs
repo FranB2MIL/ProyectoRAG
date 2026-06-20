@@ -17,6 +17,8 @@ var anthropicApiKey = builder.Configuration["Anthropic:ApiKey"];
 builder.Services.AddSingleton<IChatService>(
     new AnthropicChatService(anthropicApiKey!));
 
+builder.Services.AddScoped<IExcelReader, ClosedXmlExcelReader>();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddSingleton<IDocumentRepository>(
     new DocumentRepository(connectionString!));
