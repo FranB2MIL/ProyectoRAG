@@ -11,17 +11,18 @@ public class DocumentsController : ControllerBase
     private readonly IDocumentRepository _repository;
     private readonly IEmbeddingService _embeddingService;
     private readonly IChatService _chatService;
-    private readonly IExcelReader _excelReader;
+    private readonly IDocxReader _docxReader;
+
     public DocumentsController(
         IDocumentRepository repository,
         IEmbeddingService embeddingService,
         IChatService chatService,
-        IExcelReader excelReader)
+        IDocxReader docxReader)
     {
         _repository = repository;
         _embeddingService = embeddingService;
         _chatService = chatService;
-        _excelReader = excelReader;
+        _docxReader = docxReader;
     }
 
     [HttpPost("index")]
@@ -49,23 +50,25 @@ public class DocumentsController : ControllerBase
         return Ok(new { answer });
     }
 
-    [HttpPost("import-excel")]
-    public async Task<IActionResult> ImportExcel(IFormFile file)
+    [HttpPost("import-docx")]
+    public async Task<IActionResult> ImportDocx(IFormFile file)
     {
         if (file == null || file.Length == 0)
             return BadRequest("No file uploaded.");
 
         using var stream = file.OpenReadStream();
-        var vehicles = _excelReader.ReadVehicles(stream).ToList();
+        var entries = _docxReader.ReadLoreEntries(stream).ToList();
+        
 
-        var texts = vehicles.Select(v => v.ToEmbeddingText()).ToArray();
+        var texts = entries.Select(e => e.ToEmbeddingText()).ToArray();
+        
         var embeddings = await _embeddingService.GenerateEmbeddingsAsync(texts);
 
-        for (int i = 0; i < vehicles.Count; i++)
+        for (int i = 0; i < entries.Count; i++)
         {
             await _repository.SaveDocumentAsync(texts[i], embeddings[i]);
         }
 
-        return Ok(new { message = $"{vehicles.Count} vehicles indexed successfully" });
+        return Ok(new { message = $"{entries.Count} lore entries indexed successfully" });
     }
 }
