@@ -1,16 +1,23 @@
-# ProyectoRAG
+# Destiny Loremaster RAG
 
-A Retrieval-Augmented Generation (RAG) pipeline built with .NET 9 and Clean Architecture. It indexes text into a vector database and answers natural-language questions about that data using semantic search + Claude.
+A Retrieval-Augmented Generation (RAG) pipeline built with .NET 9 and Clean Architecture. It indexes the *Destiny* lore timeline from a structured `.docx` document and answers natural-language questions about it using semantic search + Claude — like having a loremaster who actually read every Grimoire card.
+
+This started as a generic RAG learning project (originally tested with a vehicle catalog from Excel) and evolved into something more interesting: narrative, unstructured text is where RAG actually earns its keep, instead of competing with a simple SQL query.
 
 ## How it works
 
-1. **Index** — text is sent to Voyage AI to generate an embedding, then stored in PostgreSQL with pgvector.
-2. **Retrieve** — a question is embedded the same way, and pgvector returns the most semantically similar chunks using cosine distance.
-3. **Generate** — the retrieved chunks are passed to the Anthropic API as context, and Claude generates a natural-language answer grounded in that data.
+1. **Parse** — a `.docx` file is read section by section. Heading styles (`Heading1`, `Heading2`...) define lore eras/sections, and italicized sub-topics within paragraphs (e.g. *"Rhulk and the Ahslid:"*) define finer-grained entries. This keeps each indexed chunk thematically focused instead of mixing multiple topics together.
+2. **Index** — each entry is sent to Voyage AI to generate an embedding (batched in a single request), then stored in PostgreSQL with pgvector, tagged with its section/sub-topic as metadata.
+3. **Retrieve** — a question is embedded the same way, and pgvector returns the most semantically similar entries using cosine distance.
+4. **Generate** — the retrieved entries are passed to the Anthropic API as context, and Claude generates a natural-language answer grounded in that lore.
 
 ```
 Question → Voyage AI (embedding) → pgvector (similarity search) → Anthropic API (answer)
 ```
+
+## Why narrative text instead of tabular data
+
+RAG shines when answers require semantic understanding of unstructured text — nuance, relationships between entities, conceptual comparisons. Structured data (rows and columns, like a vehicle catalog) is usually better served by a direct SQL query: exact, fast, and free of the precision loss that comes from compressing rows into chunks of vector-searchable text. A 200+ page lore timeline, full of characters, philosophies, and interconnected events, is a much better fit for what RAG is actually good at.
 
 ## Tech stack
 
@@ -19,7 +26,7 @@ Question → Voyage AI (embedding) → pgvector (similarity search) → Anthropi
 - **PostgreSQL + pgvector** — vector storage and cosine similarity search
 - **Anthropic API** — final answer generation (`claude-sonnet-4-6`)
 - **Npgsql + Pgvector.NET** — database access from C#
-- **ClosedXML** — reading tabular data from `.xlsx` files for bulk indexing
+- **DocumentFormat.OpenXml** — parsing `.docx` structure (headings, italics) for content-aware chunking
 - **Docker + Docker Compose** — the entire stack (API + database) runs in containers
 
 ## Architecture
@@ -28,9 +35,9 @@ The project follows Clean Architecture. Dependencies only point inward — `Infr
 
 ```
 ProyectoRAG/
-├── ProyectoRAG.Domain/          → core entities, no external dependencies
-├── ProyectoRAG.Application/     → interfaces (IEmbeddingService, IDocumentRepository, IChatService)
-├── ProyectoRAG.Infrastructure/  → implementations (Voyage AI, pgvector, Anthropic clients)
+├── ProyectoRAG.Domain/          → core entities (LoreEntry), no external dependencies
+├── ProyectoRAG.Application/     → interfaces (IEmbeddingService, IDocumentRepository, IChatService, IDocxReader)
+├── ProyectoRAG.Infrastructure/  → implementations (Voyage AI, pgvector, Anthropic, OpenXml docx parser)
 └── ProyectoRAG.WebApi/          → HTTP endpoints, dependency injection setup
 ```
 
@@ -147,16 +154,20 @@ The API will be available at `http://localhost:5218`.
 
 ## API reference
 
-### Index a document
+### Import lore from a `.docx` file
 
 ```http
-POST /api/documents/index
-Content-Type: application/json
+POST /api/documents/import-docx
+Content-Type: multipart/form-data
 
-{ "content": "The premium plan costs $50 per month." }
+file: <your-lore-file.docx>
 ```
 
-Generates an embedding for the text and stores it in pgvector.
+Parses the document by heading structure and italicized sub-topics, generates embeddings for all entries in a single batched request, and indexes them.
+
+```json
+{ "message": "8 lore entries indexed successfully" }
+```
 
 ### Search for similar content
 
@@ -164,25 +175,10 @@ Generates an embedding for the text and stores it in pgvector.
 POST /api/documents/search
 Content-Type: application/json
 
-{ "query": "How much does the premium plan cost?", "topK": 3 }
+{ "query": "What is the Witness's philosophy?", "topK": 3 }
 ```
 
-Returns the `topK` most semantically similar stored documents, ranked by relevance. No LLM call involved — pure vector search.
-
-### Import vehicles from Excel
-
-```http
-POST /api/documents/import-excel
-Content-Type: multipart/form-data
-
-file: <your-file.xlsx>
-```
-
-Reads each row as a vehicle record, generates embeddings for all rows in a single batched request, and indexes them. Expects columns in this order: Branch, Class, Year, Model, Color, Plate, Kilometers, Sale Price.
-
-```json
-{ "message": "22 vehicles indexed successfully" }
-```
+Returns the `topK` most semantically similar stored entries, ranked by relevance. No LLM call involved — pure vector search.
 
 ### Ask a question (full RAG pipeline)
 
@@ -190,22 +186,33 @@ Reads each row as a vehicle record, generates embeddings for all rows in a singl
 POST /api/documents/ask
 Content-Type: application/json
 
-{ "query": "How much does the premium plan cost?" }
+{ "query": "What is the Winnower's argument about morality?" }
 ```
 
-Embeds the question, retrieves relevant context from pgvector, and asks Claude to answer based on that context:
+Embeds the question, retrieves relevant lore context from pgvector, and asks Claude to answer based on that context:
 
 ```json
-{ "answer": "Based on the provided context, the premium plan costs $50 per month." }
+{ "answer": "Based on the provided context, the Winnower's argument about morality is that if moral good is not suffering and moral bad is suffering, then it is a moral imperative that death exists to remove all except those who must live..." }
 ```
+
+If the question falls outside the indexed lore, Claude says so explicitly instead of guessing — verified by asking about content that was never indexed.
 
 ## Project status
 
-This is a learning / portfolio project demonstrating an end-to-end RAG pipeline with proper architectural separation between providers and business logic. Completed so far: embeddings, vector search, LLM-generated answers, bulk Excel import, and full containerization with Docker Compose.
+This is a learning / portfolio project demonstrating an end-to-end RAG pipeline with proper architectural separation between providers and business logic, currently being rebuilt around narrative content instead of tabular data.
 
-Possible next steps:
-- A router that decides between semantic search (RAG) and structured queries (Text-to-SQL) depending on the question — useful for aggregate questions like "the cheapest car" or "how many Corollas are there"
-- A React frontend for interacting with the API visually
+**Completed so far:** embeddings, vector search, LLM-generated answers, structure-aware `.docx` chunking (headings + sub-topics), full containerization with Docker Compose. Validated with a sample of the Destiny lore timeline — confirmed accurate retrieval, multi-chunk synthesis on comparative questions, and honest "I don't have that information" responses when content isn't indexed.
+
+**In progress — turning this into a full Destiny Loremaster app:**
+1. **Personality** — give the assistant a loremaster/professor voice instead of a generic Q&A tone
+2. **Scale the index** — batch-import the full 200+ page lore timeline (current `.docx` import works, but needs batching for documents this large) and filter out non-content entries (titles, table of contents)
+3. **Backend readiness** — configure CORS so a separate frontend can call the API
+4. **React frontend** — a chat interface with Destiny-inspired visual identity
+5. **Full containerization** — add the frontend to `docker-compose.yml` alongside the API and database
+
+**Other possible directions:**
+- A router that decides between semantic search (RAG) and structured queries (Text-to-SQL) depending on the question type
+- Hybrid search (semantic + BM25) to improve precision on proper nouns (character names, item names)
 - Deploying the containerized stack to a cloud provider (Azure, AWS)
 
 ## License
