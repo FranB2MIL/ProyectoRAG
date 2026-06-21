@@ -58,17 +58,28 @@ public class DocumentsController : ControllerBase
 
         using var stream = file.OpenReadStream();
         var entries = _docxReader.ReadLoreEntries(stream).ToList();
-        
 
-        var texts = entries.Select(e => e.ToEmbeddingText()).ToArray();
-        
-        var embeddings = await _embeddingService.GenerateEmbeddingsAsync(texts);
+        const int batchSize = 20;
+        int totalIndexed = 0;
 
-        for (int i = 0; i < entries.Count; i++)
+        for (int i = 0; i < entries.Count; i += batchSize)
         {
-            await _repository.SaveDocumentAsync(texts[i], embeddings[i]);
+            var batch = entries.Skip(i).Take(batchSize).ToList();
+            var texts = batch.Select(e => e.ToEmbeddingText()).ToArray();
+            var embeddings = await _embeddingService.GenerateEmbeddingsAsync(texts);
+
+            for (int j = 0; j < batch.Count; j++)
+            {
+                await _repository.SaveDocumentAsync(texts[j], embeddings[j]);
+            }
+
+            totalIndexed += batch.Count;
+            Console.WriteLine($"Indexed batch {i / batchSize + 1}: {totalIndexed}/{entries.Count} entries");
+
+            if (i + batchSize < entries.Count)
+                await Task.Delay(8000); // avoid hitting Voyage AI rate limit between batches
         }
 
-        return Ok(new { message = $"{entries.Count} lore entries indexed successfully" });
+        return Ok(new { message = $"{totalIndexed} lore entries indexed successfully" });
     }
 }
