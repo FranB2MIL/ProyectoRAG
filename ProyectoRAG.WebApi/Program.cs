@@ -7,6 +7,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",  // Vite default
+                "http://localhost:3000"   // CRA fallback
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddHttpClient<IEmbeddingService, VoyageEmbeddingService>(client =>
 {
     var apiKey = builder.Configuration["VoyageAI:ApiKey"];
@@ -33,6 +47,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 app.MapControllers();
 
 app.Run();
