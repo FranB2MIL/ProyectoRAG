@@ -12,17 +12,19 @@ public class DocumentsController : ControllerBase
     private readonly IEmbeddingService _embeddingService;
     private readonly IChatService _chatService;
     private readonly IDocxReader _docxReader;
-
+    private readonly IQueryRewritingService _queryRewritingService;
     public DocumentsController(
         IDocumentRepository repository,
         IEmbeddingService embeddingService,
         IChatService chatService,
-        IDocxReader docxReader)
+        IDocxReader docxReader,
+        IQueryRewritingService queryRewritingService)
     {
         _repository = repository;
         _embeddingService = embeddingService;
         _chatService = chatService;
         _docxReader = docxReader;
+        _queryRewritingService = queryRewritingService;
     }
 
     [HttpPost("index")]
@@ -37,16 +39,30 @@ public class DocumentsController : ControllerBase
     public async Task<ActionResult<IEnumerable<string>>> Search([FromBody] SearchRequest request)
     {
         var embedding = await _embeddingService.GenerateEmbeddingAsync(request.Query);
-        var results = await _repository.SearchSimilarAsync(embedding, request.TopK);
+        var results = await _repository.SearchSimilarAsync(embedding, request.Query, request.TopK);
         return Ok(results);
     }
 
     [HttpPost("ask")]
     public async Task<IActionResult> Ask([FromBody] SearchRequest request)
     {
-        var embedding = await _embeddingService.GenerateEmbeddingAsync(request.Query);
-        var relevantChunks = await _repository.SearchSimilarAsync(embedding, request.TopK);
-        var answer = await _chatService.AskAsync(request.Query, relevantChunks);
+        var alternativeQueries = await _queryRewritingService
+            .GenerateAlternativeQueriesAsync(request.Query);
+
+        var allQueries = new[] { request.Query }.Concat(alternativeQueries).ToArray();
+
+        // Generate all embeddings in a single batch call
+        var embeddings = await _embeddingService.GenerateEmbeddingsAsync(allQueries);
+
+        var allChunks = new List<string>();
+        for (int i = 0; i < allQueries.Length; i++)
+        {
+            var chunks = await _repository.SearchSimilarAsync(embeddings[i], allQueries[i], request.TopK);
+            allChunks.AddRange(chunks);
+        }
+
+        var uniqueChunks = allChunks.Distinct().ToList();
+        var answer = await _chatService.AskAsync(request.Query, uniqueChunks);
         return Ok(new { answer });
     }
 

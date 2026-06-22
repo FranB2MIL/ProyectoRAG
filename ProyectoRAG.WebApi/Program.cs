@@ -18,6 +18,8 @@ builder.Services.AddSingleton<IChatService>(
     new AnthropicChatService(anthropicApiKey!));
 
 builder.Services.AddScoped<IDocxReader, OpenXmlDocxReader>();
+builder.Services.AddSingleton<IQueryRewritingService>(
+    new AnthropicQueryRewritingService(anthropicApiKey!));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddSingleton<IDocumentRepository>(

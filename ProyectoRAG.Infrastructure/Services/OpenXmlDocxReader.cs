@@ -8,52 +8,54 @@ namespace ProyectoRAG.Infrastructure.Services;
 public class OpenXmlDocxReader : IDocxReader
 {
     public IEnumerable<LoreEntry> ReadLoreEntries(Stream fileStream)
-{
-    var entries = new List<LoreEntry>();
-    string currentSection = "Untitled Section";
-
-    using var wordDoc = WordprocessingDocument.Open(fileStream, false);
-    var body = wordDoc.MainDocumentPart?.Document?.Body;
-    if (body == null) return entries;
-
-    foreach (var paragraph in body.Elements<Paragraph>())
     {
-        var styleId = paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
-        var text = paragraph.InnerText.Trim();
+        var entries = new List<LoreEntry>();
+        string currentSection = "Untitled Section";
 
-        if (string.IsNullOrWhiteSpace(text))
-            continue;
+        using var wordDoc = WordprocessingDocument.Open(fileStream, false);
+        var body = wordDoc.MainDocumentPart?.Document?.Body;
+        if (body == null) return entries;
 
-        if (styleId != null && styleId.StartsWith("Heading"))
+        foreach (var paragraph in body.Elements<Paragraph>())
         {
-            currentSection = text;
-            continue;
-        }
+            var styleId = paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
+            var text = paragraph.InnerText.Trim();
 
-        var firstRun = paragraph.Elements<Run>().FirstOrDefault();
-        bool startsItalic = firstRun?.RunProperties?.Italic != null;
+            if (string.IsNullOrWhiteSpace(text))
+                continue;
 
-        string subTopic = "";
-        string content = text;
-
-        if (startsItalic)
-        {
-            var colonIndex = text.IndexOf(':');
-            if (colonIndex > 0 && colonIndex < 100)
+            if (styleId != null && styleId.StartsWith("Heading"))
             {
-                subTopic = text[..colonIndex].Trim();
-                content = text[(colonIndex + 1)..].Trim();
+                currentSection = text;
+                continue;
             }
+
+            var firstRun = paragraph.Elements<Run>().FirstOrDefault();
+            bool startsItalic = firstRun?.RunProperties?.Italic != null;
+
+            string subTopic = "";
+            string content = text;
+
+            if (startsItalic)
+            {
+                var colonIndex = text.IndexOf(':');
+                if (colonIndex > 0 && colonIndex < 100)
+                {
+                    subTopic = text[..colonIndex].Trim();
+                    content = text[(colonIndex + 1)..].Trim();
+                }
+            }
+            if (content.Length < 50)
+                continue; // Skip very short entries
+
+            entries.Add(new LoreEntry
+            {
+                Section = currentSection,
+                SubTopic = subTopic,
+                Content = content
+            });
         }
 
-        entries.Add(new LoreEntry
-        {
-            Section = currentSection,
-            SubTopic = subTopic,
-            Content = content
-        });
+        return entries;
     }
-
-    return entries;
-}
 }
