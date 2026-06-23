@@ -1,3 +1,4 @@
+using AspNetCoreRateLimit;
 using ProyectoRAG.Application.Interfaces;
 using ProyectoRAG.Infrastructure.Repositories;
 using ProyectoRAG.Infrastructure.Services;
@@ -39,12 +40,45 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddSingleton<IDocumentRepository>(
     new DocumentRepository(connectionString!));
 
+// Rate limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(options =>
+{
+    options.EnableEndpointRateLimiting = true;
+    options.StackBlockedRequests = false;
+    options.HttpStatusCode = 429;
+    options.RealIpHeader = "X-Real-IP";
+    options.GeneralRules = new List<RateLimitRule>
+    {
+        new RateLimitRule
+        {
+            Endpoint = "POST:/api/documents/ask",
+            Period = "1m",
+            Limit = 5
+        },
+        new RateLimitRule
+        {
+            Endpoint = "POST:/api/documents/ask",
+            Period = "1h",
+            Limit = 30
+        }
+    };
+});
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+builder.Services.AddInMemoryRateLimiting();
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseIpRateLimiting();
 
 // app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
