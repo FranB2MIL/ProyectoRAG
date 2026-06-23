@@ -1,60 +1,81 @@
-# Destiny Loremaster RAG
+# Grimoires of Sol
 
-A Retrieval-Augmented Generation (RAG) pipeline built with .NET 9 and Clean Architecture. It indexes the *Destiny* lore timeline from a structured `.docx` document and answers natural-language questions about it using semantic search + Claude — like having a loremaster who actually read every Grimoire card.
+A full-stack Destiny lore assistant powered by a RAG (Retrieval-Augmented Generation) pipeline. Ask anything about the Destiny universe and receive answers from a Lightbearer who has spent decades studying the forgotten corners of this system's history.
 
-This started as a generic RAG learning project (originally tested with a vehicle catalog from Excel) and evolved into something more interesting: narrative, unstructured text is where RAG actually earns its keep, instead of competing with a simple SQL query.
+Built with .NET 9, React, PostgreSQL + pgvector, Voyage AI, and the Anthropic API — fully containerized with Docker Compose.
+
+---
 
 ## How it works
 
-1. **Parse** — a `.docx` file is read section by section. Heading styles (`Heading1`, `Heading2`...) define lore eras/sections, and italicized sub-topics within paragraphs (e.g. *"Rhulk and the Ahslid:"*) define finer-grained entries. This keeps each indexed chunk thematically focused instead of mixing multiple topics together.
-2. **Index** — each entry is sent to Voyage AI to generate an embedding (batched in a single request), then stored in PostgreSQL with pgvector, tagged with its section/sub-topic as metadata.
-3. **Retrieve** — a question is embedded the same way, and pgvector returns the most semantically similar entries using cosine distance.
-4. **Generate** — the retrieved entries are passed to the Anthropic API as context, and Claude generates a natural-language answer grounded in that lore.
+1. **Parse** — a `.docx` lore timeline is read section by section. Heading styles define eras and sections; italicized sub-topics within paragraphs define finer-grained entries. Each chunk stays thematically focused.
+2. **Index** — entries are sent to Voyage AI in batches to generate embeddings (1024 dimensions), then stored in PostgreSQL with pgvector.
+3. **Retrieve** — when a question arrives, it's rewritten into 3 alternative queries by Claude Haiku, then all 4 queries are embedded and searched in parallel. Results are fused using Reciprocal Rank Fusion (RRF) combining both semantic (vector) and lexical (BM25) search.
+4. **Generate** — the retrieved entries are passed to Claude Sonnet as context, and the Lightbearer persona formulates a narrative answer grounded in that lore.
 
 ```
-Question → Voyage AI (embedding) → pgvector (similarity search) → Anthropic API (answer)
+Question → Query Rewriting (Haiku) → Voyage AI (4x embeddings)
+        → pgvector (semantic) + PostgreSQL (BM25) → RRF fusion
+        → Anthropic API (Sonnet) → answer
 ```
+
+---
 
 ## Why narrative text instead of tabular data
 
-RAG shines when answers require semantic understanding of unstructured text — nuance, relationships between entities, conceptual comparisons. Structured data (rows and columns, like a vehicle catalog) is usually better served by a direct SQL query: exact, fast, and free of the precision loss that comes from compressing rows into chunks of vector-searchable text. A 200+ page lore timeline, full of characters, philosophies, and interconnected events, is a much better fit for what RAG is actually good at.
+RAG shines on unstructured narrative content — nuance, relationships between entities, conceptual comparisons. A 200+ page lore timeline full of characters, philosophies, and interconnected events across billions of years is a much better fit than tabular data, which is better served by direct SQL.
+
+---
 
 ## Tech stack
 
-- **.NET 9** — Clean Architecture (Domain / Application / Infrastructure / WebApi)
-- **Voyage AI** — text embeddings (`voyage-3`, 1024 dimensions)
-- **PostgreSQL + pgvector** — vector storage and cosine similarity search
-- **Anthropic API** — final answer generation (`claude-sonnet-4-6`)
-- **Npgsql + Pgvector.NET** — database access from C#
-- **DocumentFormat.OpenXml** — parsing `.docx` structure (headings, italics) for content-aware chunking
-- **Docker + Docker Compose** — the entire stack (API + database) runs in containers
+**Backend**
+- .NET 9 — Clean Architecture (Domain / Application / Infrastructure / WebApi)
+- Voyage AI — text embeddings (`voyage-3`, 1024 dimensions)
+- PostgreSQL + pgvector — vector storage and cosine similarity search
+- Full-text search — PostgreSQL `tsvector` + GIN index for BM25 lexical search
+- Anthropic API — query rewriting (`claude-haiku-4-5`) + answer generation (`claude-sonnet-4-6`)
+- DocumentFormat.OpenXml — structure-aware `.docx` parsing (headings + italic sub-topics)
+- AspNetCoreRateLimit — IP-based rate limiting (5 requests/min, 30/hour)
+
+**Frontend**
+- React + Vite — chat interface with landing page and routing
+- nginx — serves the frontend and proxies `/api/*` to the backend
+
+**Infrastructure**
+- Docker + Docker Compose — entire stack (frontend + API + database) runs in 3 containers
+- nginx reverse proxy — single origin for frontend and API, production-ready
+
+---
 
 ## Architecture
 
-The project follows Clean Architecture. Dependencies only point inward — `Infrastructure` and `WebApi` depend on `Application`, but `Application` and `Domain` know nothing about Voyage AI, pgvector, or Anthropic.
-
 ```
 ProyectoRAG/
-├── ProyectoRAG.Domain/          → core entities (LoreEntry), no external dependencies
-├── ProyectoRAG.Application/     → interfaces (IEmbeddingService, IDocumentRepository, IChatService, IDocxReader)
-├── ProyectoRAG.Infrastructure/  → implementations (Voyage AI, pgvector, Anthropic, OpenXml docx parser)
-└── ProyectoRAG.WebApi/          → HTTP endpoints, dependency injection setup
+├── ProyectoRAG.Domain/          → LoreEntry entity
+├── ProyectoRAG.Application/     → interfaces (IEmbeddingService, IDocumentRepository,
+│                                   IChatService, IDocxReader, IQueryRewritingService)
+├── ProyectoRAG.Infrastructure/  → Voyage AI, pgvector, Anthropic, OpenXml parser
+├── ProyectoRAG.WebApi/          → HTTP endpoints, DI setup, rate limiting
+└── frontend/                    → React app + nginx config + Dockerfile
+    ├── src/
+    │   ├── pages/               → LandingPage, ChatPage
+    │   └── components/          → Header, ChatWindow, Message, ChatInput
+    ├── Dockerfile
+    └── nginx.conf
 ```
 
-This means any provider can be swapped without touching business logic — e.g. replacing Voyage AI with OpenAI embeddings only requires a new `Infrastructure` implementation of `IEmbeddingService`.
+---
 
 ## Prerequisites
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - A [Voyage AI](https://dash.voyageai.com) API key (free tier available)
 - An [Anthropic API](https://platform.claude.com) key
 
+---
+
 ## Setup
-
-### Option A — Docker Compose (recommended)
-
-This runs the entire stack — API and database — with a single command. No need to install .NET or PostgreSQL locally.
 
 **1. Clone the repo**
 
@@ -63,22 +84,22 @@ git clone https://github.com/your-username/ProyectoRAG.git
 cd ProyectoRAG
 ```
 
-**2. Create a `.env` file** in the project root with your API keys:
+**2. Create a `.env` file** in the project root:
 
 ```env
 VOYAGE_API_KEY=your-voyage-api-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
-**3. Start everything**
+**3. Start the stack**
 
 ```bash
 docker compose up --build
 ```
 
-The API will be available at `http://localhost:5218`. The database schema (pgvector extension + `documents` table) needs to be created once — see step 4 below.
+This builds and starts 3 containers: PostgreSQL + pgvector, the .NET WebApi, and the React frontend served by nginx.
 
-**4. Create the schema** (first run only)
+**4. Create the database schema** (first run only)
 
 ```bash
 docker exec -it proyectorag-postgres psql -U postgres -d proyectorag
@@ -90,71 +111,33 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE documents (
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL,
-    embedding vector(1024)
+    embedding vector(1024),
+    content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED
 );
+
+CREATE INDEX idx_documents_tsv ON documents USING GIN(content_tsv);
 ```
 
-### Option B — Manual setup (without Docker for the API)
+**5. Index the lore**
 
-If you prefer running the WebApi directly with `dotnet run` while still using Docker for the database:
-
-**1. Clone and restore**
+Upload your `.docx` lore document:
 
 ```bash
-git clone https://github.com/your-username/ProyectoRAG.git
-cd ProyectoRAG
-dotnet restore
+curl -X POST http://localhost:5173/api/documents/import-docx \
+  -F "file=@your-lore-file.docx"
 ```
 
-**2. Start PostgreSQL with pgvector**
+The importer parses the document by heading structure and italic sub-topics, generates embeddings in batches with automatic retry/backoff for rate limits, and stores everything in pgvector.
 
-```bash
-docker run -d \
-  --name pgvector-dev \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=proyectorag \
-  -p 5433:5432 \
-  pgvector/pgvector:pg16
-```
+**6. Open the app**
 
-**3. Create the schema**
+Navigate to `http://localhost:5173`.
 
-```bash
-docker exec -it pgvector-dev psql -U postgres -d proyectorag
-```
-
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-
-CREATE TABLE documents (
-    id SERIAL PRIMARY KEY,
-    content TEXT NOT NULL,
-    embedding vector(1024)
-);
-```
-
-**4. Configure secrets**
-
-From `ProyectoRAG.WebApi`:
-
-```bash
-dotnet user-secrets set "VoyageAI:ApiKey" "your-voyage-api-key"
-dotnet user-secrets set "Anthropic:ApiKey" "your-anthropic-api-key"
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=proyectorag;Username=postgres;Password=postgres"
-```
-
-**5. Run**
-
-```bash
-cd ProyectoRAG.WebApi
-dotnet run
-```
-
-The API will be available at `http://localhost:5218`.
+---
 
 ## API reference
 
-### Import lore from a `.docx` file
+### Import lore from `.docx`
 
 ```http
 POST /api/documents/import-docx
@@ -163,22 +146,14 @@ Content-Type: multipart/form-data
 file: <your-lore-file.docx>
 ```
 
-Parses the document by heading structure and italicized sub-topics, generates embeddings for all entries in a single batched request, and indexes them.
-
-```json
-{ "message": "8 lore entries indexed successfully" }
-```
-
-### Search for similar content
+### Search (vector + BM25, no LLM)
 
 ```http
 POST /api/documents/search
 Content-Type: application/json
 
-{ "query": "What is the Witness's philosophy?", "topK": 3 }
+{ "query": "Sword Logic", "topK": 6 }
 ```
-
-Returns the `topK` most semantically similar stored entries, ranked by relevance. No LLM call involved — pure vector search.
 
 ### Ask a question (full RAG pipeline)
 
@@ -189,31 +164,27 @@ Content-Type: application/json
 { "query": "What is the Winnower's argument about morality?" }
 ```
 
-Embeds the question, retrieves relevant lore context from pgvector, and asks Claude to answer based on that context:
+Rate limited: 5 requests per minute, 30 per hour per IP.
 
-```json
-{ "answer": "Based on the provided context, the Winnower's argument about morality is that if moral good is not suffering and moral bad is suffering, then it is a moral imperative that death exists to remove all except those who must live..." }
-```
+---
 
-If the question falls outside the indexed lore, Claude says so explicitly instead of guessing — verified by asking about content that was never indexed.
+## Lore persona
+
+The assistant answers as a Lightbearer who has spent decades studying the deep, forgotten corners of this universe's history. It speaks with narrative gravity, cites context naturally, and — critically — will not invent lore that isn't in the indexed documents. If the answer isn't there, it says so in character.
+
+---
 
 ## Project status
 
-This is a learning / portfolio project demonstrating an end-to-end RAG pipeline with proper architectural separation between providers and business logic, currently being rebuilt around narrative content instead of tabular data.
+Functional and deployed locally. The lore database currently indexes the Complete Destiny Timeline (Parts 1 and 2), covering everything from Before Time through the end of Destiny 2.
 
-**Completed so far:** embeddings, vector search, LLM-generated answers, structure-aware `.docx` chunking (headings + sub-topics), full containerization with Docker Compose. Validated with a sample of the Destiny lore timeline — confirmed accurate retrieval, multi-chunk synthesis on comparative questions, and honest "I don't have that information" responses when content isn't indexed.
+**Possible next steps:**
+- Deploy to a cloud provider (Railway, Render, or Azure) for public access
+- Re-index with a content length filter to remove low-quality short chunks
+- Add Cohere Rerank as a post-retrieval quality pass
+- Expand the lore database with additional sources
 
-**In progress — turning this into a full Destiny Loremaster app:**
-1. **Personality** — give the assistant a loremaster/professor voice instead of a generic Q&A tone
-2. **Scale the index** — batch-import the full 200+ page lore timeline (current `.docx` import works, but needs batching for documents this large) and filter out non-content entries (titles, table of contents)
-3. **Backend readiness** — configure CORS so a separate frontend can call the API
-4. **React frontend** — a chat interface with Destiny-inspired visual identity
-5. **Full containerization** — add the frontend to `docker-compose.yml` alongside the API and database
-
-**Other possible directions:**
-- A router that decides between semantic search (RAG) and structured queries (Text-to-SQL) depending on the question type
-- Hybrid search (semantic + BM25) to improve precision on proper nouns (character names, item names)
-- Deploying the containerized stack to a cloud provider (Azure, AWS)
+---
 
 ## License
 
