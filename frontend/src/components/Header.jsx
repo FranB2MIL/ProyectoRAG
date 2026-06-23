@@ -8,7 +8,9 @@ function Header() {
           <p className="header-subtitle">Ask anything about the lore</p>
         </div>
       </div>
-       <img src="/grimoire.png" alt="Grimoire" className="header-grimoire" />
+       <button className="header-exit-btn" onClick={() => navigate("/")}>
+        ✕ Exit
+      </button>
     </header>
   )
 }
