@@ -9,7 +9,12 @@ function LandingPage() {
 
   return (
     <div className="landing">
-      <GlassPanel as="section" accent="arc" cornerSize={28} className="landing-panel">
+      <div className="corner corner-tl"></div>
+      <div className="corner corner-tr"></div>
+      <div className="corner corner-bl"></div>
+      <div className="corner corner-br"></div>
+
+      <div className="landing-content">
         <GhostLoader size={160} className="landing-ghost" />
 
         <h1 className="landing-title">Grimoires of Sol</h1>
@@ -24,9 +29,16 @@ function LandingPage() {
 
         <div className="landing-divider"></div>
 
-        <button className="landing-btn" onClick={() => navigate("/chat")}>
+        <GlassPanel
+          as="button"
+          accent="solar"
+          emphasized
+          cornerSize={10}
+          className="landing-btn"
+          onClick={() => navigate("/chat")}
+        >
           Enter the Archives
-        </button>
+        </GlassPanel>
 
         <div className="landing-divider"></div>
 
@@ -35,7 +47,7 @@ function LandingPage() {
             <span>{open ? "▲" : "▼"}</span> How does this work?
           </button>
           {open && (
-            <div className="faq-content">
+            <GlassPanel accent="arc" cornerSize={14} className="faq-content">
               <p>
                 Grimoires of Sol uses a RAG (Retrieval-Augmented Generation) system — it searches
                 a database of Destiny lore entries and uses AI to formulate the answer in character.
@@ -48,10 +60,10 @@ function LandingPage() {
                 <li>Sources are the Complete Destiny Timeline documents — not every grimoire card or lore tab may be indexed</li>
                 <li>Answers are generated, not copied — they may occasionally miss nuance on very obscure topics</li>
               </ul>
-            </div>
+            </GlassPanel>
           )}
         </div>
-      </GlassPanel>
+      </div>
     </div>
   )
 }

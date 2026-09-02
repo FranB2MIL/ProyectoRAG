@@ -8,8 +8,9 @@ body {
   background-color: var(--color-bg-base);
   color: #d4b896;
   font-family: system-ui, sans-serif;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .app {
@@ -224,20 +225,34 @@ body {
   position: relative;
   z-index: 1;
   min-height: 100vh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
 }
 
-.landing-panel {
+.landing-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   max-width: 560px;
   width: 100%;
-  padding: 3rem 2.5rem;
 }
+
+/* Corner decorations */
+.corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: rgba(63, 212, 232, 0.3);
+  border-style: solid;
+}
+
+.corner-tl { top: 16px; left: 16px; border-width: 1px 0 0 1px; }
+.corner-tr { top: 16px; right: 16px; border-width: 1px 1px 0 0; }
+.corner-bl { bottom: 16px; left: 16px; border-width: 0 0 1px 1px; }
+.corner-br { bottom: 16px; right: 16px; border-width: 0 1px 1px 0; }
 
 .landing-ghost {
   margin-bottom: 1rem;
@@ -286,20 +301,15 @@ body {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--color-bg-base);
-  background: var(--color-accent-solar);
-  border: none;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  color: var(--color-accent-solar);
   padding: 0.85rem 2.5rem;
   cursor: pointer;
-  filter: drop-shadow(0 0 6px rgba(255, 106, 44, 0.25));
-  transition: filter 0.2s ease, opacity 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .landing-btn:hover,
 .landing-btn:focus-visible {
-  opacity: 0.9;
-  filter: drop-shadow(0 0 14px rgba(255, 106, 44, 0.55));
+  opacity: 0.85;
 }
 
 /* FAQ Dropdown */
@@ -332,10 +342,8 @@ body {
 }
 
 .faq-content {
-  border: 1px solid rgba(63, 212, 232, 0.3);
-  border-top: none;
+  margin-top: 0.75rem;
   padding: 1rem;
-  background: rgba(10, 14, 22, 0.4);
 }
 
 .faq-content p {
