@@ -1,0 +1,45 @@
+.glass-panel {
+  --corner-size: 20px;
+
+  position: relative;
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid transparent;
+  clip-path: polygon(
+    var(--corner-size) 0,
+    100% 0,
+    100% calc(100% - var(--corner-size)),
+    calc(100% - var(--corner-size)) 100%,
+    0 100%,
+    0 var(--corner-size)
+  );
+  transition: filter 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-panel--arc {
+  border-color: rgba(63, 212, 232, 0.35);
+}
+
+.glass-panel--solar {
+  border-color: rgba(255, 106, 44, 0.4);
+}
+
+.glass-panel--gold {
+  border-color: rgba(217, 184, 114, 0.4);
+}
+
+.glass-panel--emphasized.glass-panel--arc {
+  border-color: rgba(63, 212, 232, 0.65);
+  filter: drop-shadow(0 0 14px rgba(63, 212, 232, 0.35));
+}
+
+.glass-panel--emphasized.glass-panel--solar {
+  border-color: rgba(255, 106, 44, 0.7);
+  filter: drop-shadow(0 0 14px rgba(255, 106, 44, 0.4));
+}
+
+.glass-panel--emphasized.glass-panel--gold {
+  border-color: rgba(217, 184, 114, 0.7);
+  filter: drop-shadow(0 0 14px rgba(217, 184, 114, 0.35));
+}

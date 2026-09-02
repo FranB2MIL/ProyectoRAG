@@ -5,7 +5,7 @@
 }
 
 body {
-  background-color: #0e0c0a;
+  background-color: var(--color-bg-base);
   color: #d4b896;
   font-family: system-ui, sans-serif;
   height: 100vh;
@@ -221,14 +221,22 @@ body {
 
 /* Landing Page */
 .landing {
-  background: #0e0c0a;
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
-  position: relative;
+}
+
+.landing-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 560px;
+  width: 100%;
+  padding: 3rem 2.5rem;
 }
 
 .landing-ghost {
@@ -236,19 +244,19 @@ body {
 }
 
 .landing-title {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-lore);
   font-size: 2.4rem;
   font-weight: 400;
-  color: #c9a84c;
+  color: var(--color-text-primary);
   letter-spacing: 0.04em;
   text-align: center;
   margin: 0;
 }
 
 .landing-subtitle {
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 0.85rem;
-  color: #7a6a4a;
+  color: var(--color-text-secondary);
   text-align: center;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -256,9 +264,9 @@ body {
 }
 
 .landing-desc {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-lore);
   font-size: 1rem;
-  color: #c4a882;
+  color: var(--color-text-primary);
   text-align: center;
   line-height: 1.8;
   max-width: 500px;
@@ -268,42 +276,31 @@ body {
 .landing-divider {
   width: 60px;
   height: 1px;
-  background: #2a2218;
+  background: rgba(63, 212, 232, 0.25);
   margin: 1rem auto;
 }
 
 .landing-btn {
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #0e0c0a;
-  background: #c9a84c;
+  color: var(--color-bg-base);
+  background: var(--color-accent-solar);
   border: none;
-  border-radius: 3px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   padding: 0.85rem 2.5rem;
   cursor: pointer;
-  transition: opacity 0.15s;
+  filter: drop-shadow(0 0 6px rgba(255, 106, 44, 0.25));
+  transition: filter 0.2s ease, opacity 0.15s ease;
 }
 
-.landing-btn:hover {
-  opacity: 0.85;
+.landing-btn:hover,
+.landing-btn:focus-visible {
+  opacity: 0.9;
+  filter: drop-shadow(0 0 14px rgba(255, 106, 44, 0.55));
 }
-
-/* Corner decorations */
-.corner {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-color: #2a2218;
-  border-style: solid;
-}
-
-.corner-tl { top: 16px; left: 16px; border-width: 1px 0 0 1px; }
-.corner-tr { top: 16px; right: 16px; border-width: 1px 1px 0 0; }
-.corner-bl { bottom: 16px; left: 16px; border-width: 0 0 1px 1px; }
-.corner-br { bottom: 16px; right: 16px; border-width: 0 1px 1px 0; }
 
 /* FAQ Dropdown */
 .landing-faq {
@@ -314,11 +311,11 @@ body {
 .faq-toggle {
   width: 100%;
   background: transparent;
-  border: 1px solid #2a2218;
-  border-radius: 3px;
+  border: 1px solid rgba(63, 212, 232, 0.3);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   padding: 0.75rem 1rem;
-  color: #7a6a4a;
-  font-family: system-ui, sans-serif;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
   font-size: 0.85rem;
   letter-spacing: 0.05em;
   cursor: pointer;
@@ -326,32 +323,31 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .faq-toggle:hover {
-  border-color: #c9a84c;
-  color: #c9a84c;
+  border-color: var(--color-accent-arc);
+  color: var(--color-accent-arc);
 }
 
 .faq-content {
-  border: 1px solid #2a2218;
+  border: 1px solid rgba(63, 212, 232, 0.3);
   border-top: none;
-  border-radius: 0 0 3px 3px;
   padding: 1rem;
-  background: #120f0d;
+  background: rgba(10, 14, 22, 0.4);
 }
 
 .faq-content p {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-lore);
   font-size: 0.9rem;
-  color: #c4a882;
+  color: var(--color-text-primary);
   line-height: 1.7;
   margin-bottom: 0.75rem;
 }
 
 .faq-subtitle {
-  color: #c9a84c !important;
+  color: var(--color-accent-arc) !important;
   font-style: italic;
 }
 
@@ -365,9 +361,9 @@ body {
 }
 
 .faq-content ul li {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-lore);
   font-size: 0.88rem;
-  color: #c4a882;
+  color: var(--color-text-primary);
   line-height: 1.6;
   padding-left: 1rem;
   position: relative;
@@ -377,5 +373,5 @@ body {
   content: '•';
   position: absolute;
   left: 0;
-  color: #c9a84c;
+  color: var(--color-accent-arc);
 }
