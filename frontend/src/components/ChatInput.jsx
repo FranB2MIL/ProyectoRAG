@@ -1,11 +1,13 @@
 import { useState } from "react"
+import GlassPanel from "./GlassPanel"
 
 function ChatInput({ onSend, isLoading }) {
   const [text, setText] = useState("")
+  const canSend = text.trim().length > 0 && !isLoading
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!text.trim() || isLoading) return
+    if (!canSend) return
     onSend(text.trim())
     setText("")
   }
@@ -27,13 +29,17 @@ function ChatInput({ onSend, isLoading }) {
         onKeyDown={handleKeyDown}
         disabled={isLoading}
       />
-      <button
+      <GlassPanel
+        as="button"
         type="submit"
+        accent="solar"
+        emphasized={canSend}
+        cornerSize={8}
         className="chat-input-button"
-        disabled={isLoading || !text.trim()}
+        disabled={!canSend}
       >
         {isLoading ? "..." : "Ask"}
-      </button>
+      </GlassPanel>
     </form>
   )
 }

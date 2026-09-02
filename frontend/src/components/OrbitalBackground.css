@@ -1,0 +1,66 @@
+.orbital-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--color-bg-base);
+}
+
+.orbital-background svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.orbital-ring {
+  transform-origin: 960px 540px;
+}
+
+.orbital-ring-outer {
+  opacity: 0.28;
+  animation: orbital-rotate-cw 180s linear infinite;
+}
+
+.orbital-ring-mid {
+  opacity: 0.22;
+  animation: orbital-rotate-ccw 140s linear infinite;
+}
+
+.orbital-ring-inner {
+  opacity: 0.3;
+  animation: orbital-rotate-cw 90s linear infinite;
+}
+
+@keyframes orbital-rotate-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbital-rotate-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.orbital-star {
+  animation: orbital-twinkle 4s ease-in-out infinite;
+}
+
+@keyframes orbital-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
