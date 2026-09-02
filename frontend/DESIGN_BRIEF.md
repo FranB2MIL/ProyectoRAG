@@ -1,117 +1,123 @@
-# Destiny Loremaster — Design Brief
+# Grimoires of Sol — Design Brief
 
 ## Overview
 
-This is a chat interface for a Destiny lore assistant. The visual identity should feel like
-interacting with an ancient archive — warm blacks, golden accents, and a sense of weight and
-history. Think Grimoire cards from the original Destiny: dark parchment, gold lettering,
-the feeling that every word costs something to hold.
+This is a chat interface for a Destiny lore assistant. The visual identity is a
+Destiny 2 menu-inspired **glassmorphism**: a near-black navy void, orbital
+rings turning slowly behind the content, and panels of blurred glass with
+diagonal-cut corners — the Grimoire card as a HUD element rather than a page
+of parchment.
 
 ---
 
 ## Project structure
 
-The app lives in `frontend/src/` and has the following components:
+The app lives in `frontend/src/` and, as of the redesign, includes reusable
+pieces shared across pages instead of one monolithic stylesheet:
 
 ```
 src/
+├── theme.css                    → color/font design tokens (:root custom properties)
 ├── components/
-│   ├── Header.jsx        → app title and subtitle
-│   ├── ChatWindow.jsx    → scrollable message history
-│   ├── Message.jsx       → individual message (user or loremaster)
-│   └── ChatInput.jsx     → text input + send button
-├── App.jsx               → layout shell, state, API call
-└── App.css               → all styles live here
+│   ├── OrbitalBackground.jsx    → fixed, animated SVG rings + starfield behind all pages
+│   ├── GlassPanel.jsx           → the reusable "Grimoire card" glass shell
+│   ├── GhostLoader.jsx          → the pixel-art Ghost sprite (static or animated)
+│   ├── Header.jsx               → chat page title bar
+│   ├── ChatWindow.jsx           → scrollable message history
+│   ├── Message.jsx              → individual message (user or loremaster)
+│   └── ChatInput.jsx            → text input + send button
+├── pages/
+│   ├── LandingPage.jsx          → glassmorphism-redesigned
+│   └── ChatPage.jsx
+├── App.jsx                      → router shell, mounts OrbitalBackground once
+└── App.css                      → page/component styles that consume the tokens
 ```
 
-The layout is a vertical flexbox column taking the full viewport height:
-- Header: fixed at top, `flex-shrink: 0`
-- ChatWindow: `flex: 1`, `overflow-y: auto`
-- ChatInput: fixed at bottom, `flex-shrink: 0`
-
-**Do not change the component structure or JavaScript logic.** Only modify `App.css` and,
-if needed, add `className` attributes to existing JSX elements. Do not add new components
-or restructure the layout.
+`OrbitalBackground` is mounted once in `App.jsx`, above the routes, so it
+persists behind every page without being duplicated.
 
 ---
 
-## Visual identity
+## Color tokens (`theme.css`)
 
-### Mood
-Ancient archive. Warm darkness. Gold as a signal of importance, not decoration.
-The interface should feel like it belongs in the game's lore UI — heavy, deliberate, quiet.
-No playfulness, no brightness, no modern "clean SaaS" feel.
-
-### Color palette
-
-| Token | Hex | Usage |
+| Token | Hex / value | Usage |
 |---|---|---|
-| `--bg-base` | `#0e0c0a` | Page background |
-| `--bg-surface` | `#161210` | Header, input bar, message backgrounds |
-| `--bg-deep` | `#120f0d` | Loremaster message background |
-| `--border` | `#2a2218` | All borders and dividers |
-| `--gold` | `#c9a84c` | Primary accent: loremaster role label, send button, active border |
-| `--gold-dim` | `#7a6a4a` | Secondary accent: user role label, placeholder text |
-| `--text-primary` | `#d4b896` | Main readable text |
-| `--text-secondary` | `#c4a882` | Loremaster message body text |
-| `--text-muted` | `#7a6a4a` | Role labels, placeholder, empty state |
+| `--color-bg-base` | `#0a0e16` | Base background — near-black navy, not pure black |
+| `--color-glass-surface` | `rgba(20, 27, 42, 0.55)` | Glass panel fill, paired with `--blur-glass` |
+| `--blur-glass` | `18px` | `backdrop-filter: blur(...)` on glass panels |
+| `--color-accent-solar` | `#ff6a2c` | Primary accent — used sparingly, for active states/CTAs |
+| `--color-accent-arc` | `#3fd4e8` | Secondary accent — hairline borders, linework, orbital rings |
+| `--color-accent-gold` | `#d9b872` | Reserved for lore/"exotic" highlights only |
+| `--color-text-primary` | `#e7ecf4` | Main readable text |
+| `--color-text-secondary` | `#7a8699` | Muted/meta text, labels, placeholders |
 
-### Typography
-- Font stack: `'Georgia', 'Times New Roman', serif` for the Loremaster's messages — this gives
-  the feel of reading an ancient document.
-- Font stack: `system-ui, sans-serif` for the Guardian's messages and UI chrome (header,
-  input, buttons).
-- Body text size: `0.95rem`, line-height `1.7`
-- Role labels: `0.7rem`, `letter-spacing: 0.1em`, `text-transform: uppercase`
-- Header title: `1.4rem`, serif, `letter-spacing: 0.05em`
-- Header subtitle: `0.8rem`, sans-serif, muted gold
+## Typography
 
-### Borders and dividers
-- All borders: `1px solid #2a2218`
-- Loremaster message: add a `border-left: 2px solid #c9a84c` to distinguish from user messages
-- Header bottom border: `1px solid #2a2218`
-- Input bar top border: `1px solid #2a2218`
+- `--font-ui`: `'Space Grotesk', 'Rajdhani', system-ui, sans-serif` — nav,
+  labels, stats, buttons, anything that reads as UI chrome.
+- `--font-lore`: `'Spectral', 'Source Serif 4', Georgia, serif` — long-form
+  lore/body text and headings that carry the "archive" feel (e.g. the
+  Loremaster's answers, panel titles, the landing page description).
 
-### Buttons and inputs
-- Send button: `background: #c9a84c`, `color: #0e0c0a`, `font-weight: 600`,
-  no border-radius (use `border-radius: 3px` for a slightly angular feel)
-- Send button disabled: `opacity: 0.4`
-- Input field: dark background (`#120f0d`), `1px solid #2a2218` border, gold text color on focus
-  border `#c9a84c`
-- Input placeholder: `#7a6a4a`
+Fonts load via Google Fonts `<link>` tags in `index.html`.
 
-### Message layout
-- User messages: aligned to the right (`align-self: flex-end`), sans-serif,
-  background `#161210`, border `1px solid #2a2218`
-- Loremaster messages: aligned to the left (`align-self: flex-start`), serif font,
-  background `#120f0d`, border `1px solid #2a2218`, `border-left: 2px solid #c9a84c`
-- Both: `border-radius: 4px` (slightly angular, not fully rounded)
-- Max width: `72%`
-- Role label above each message bubble
+---
 
-### Loading state
-- "Consulting the archives..." in the Loremaster style (serif, muted gold, italic)
+## Panel rules (the key visual signature)
 
-### Empty state
-- "The archives await, Guardian. Ask your question."
-- Centered, serif, `#7a6a4a`, `font-style: italic`
-- Add a subtle decorative separator above and below: a short `1px solid #2a2218` horizontal line,
-  centered, `width: 60px`
+- **No `border-radius` on panels.** Corners are diagonal cuts via
+  `clip-path: polygon(...)`, parameterized by a `cornerSize` — this is
+  the defining shape language of the UI, not a decorative afterthought.
+  `GlassPanel` implements this once; consume it rather than hand-rolling
+  new clip-path math per component.
+- **Borders are 1px hairlines** in the arc or solar accent color at low
+  alpha — never a filled/solid border, never rounded.
+- **Glass panels** (`GlassPanel`) combine `--color-glass-surface` +
+  `backdrop-filter: blur(--blur-glass)` + a hairline border + the clip-path
+  corners. Small solid-fill elements (e.g. the landing CTA button) reuse the
+  same clip-path corner language without the blur, so a nested blur-on-blur
+  never happens.
+
+## Orbital background
+
+`OrbitalBackground` renders concentric rings (hairline strokes, `--color-accent-arc`
+for the outer/mid rings, `--color-accent-gold` for the inner ring) rotating
+slowly — 90 to 180 seconds per rotation, alternating direction per ring — over
+a faint twinkling starfield and a soft radial glow at the center. It sits
+`position: fixed`, `pointer-events: none`, at a low `z-index`, and stays in
+the 0.2–0.3 opacity range so it never competes with foreground content. Pages
+that sit on top of it need their own stacking context (`position: relative`
++ a `z-index` of at least `1`) or they'll render underneath it.
+
+## The "one glow at a time" principle
+
+Only a single element carries visual emphasis (a stronger border and/or a
+soft glow) at once — typically the active/primary-action element, e.g. the
+landing page's "Enter the Archives" CTA, or an active chat state. Every other
+panel, border, and divider stays quiet: hairline only, no glow, no heavy
+blur layered on top of another blur. `GlassPanel`'s `emphasized` prop is the
+single mechanism allowed to add glow — don't add `box-shadow`/`filter` glow
+ad hoc elsewhere.
 
 ---
 
 ## What to avoid
-- No gradients
-- No glow effects or box-shadows (except a subtle `inset` on the input field focus if needed)
-- No rounded corners beyond `4px` — this should feel architectural, not soft
-- No bright whites — the lightest color in the palette is `#d4b896`
-- No blue, purple, or green anywhere
-- Do not change font sizes drastically — keep them close to the current values
-- Do not add animations or transitions beyond simple `color` transitions on hover/focus
+
+- No `border-radius` on panels — diagonal clip-path corners only.
+- No glow/blur applied uniformly across every panel — reserve it for the
+  one emphasized element per view.
+- No nested `backdrop-filter` blur (a glass panel inside a glass panel).
+- No colors outside the token table above — especially no use of
+  `--color-accent-gold` outside lore/"exotic" highlights.
 
 ---
 
-## Reference feeling
-If you need a visual reference for the mood: the Destiny Grimoire card UI, the Book of Sorrow
-lore entries, the aesthetic of the Tower's archive rooms. Heavy, dark, gold-touched.
-Every element should feel like it has been there for centuries.
+## Status
+
+The landing page (`LandingPage.jsx`) has been redesigned onto this system.
+The chat interface (`Header.jsx`, `Message.jsx`, `ChatInput.jsx`, `ChatWindow.jsx`)
+is a deliberate follow-up phase and still uses the previous dark/gold styling
+in `App.css` at the time of writing — expect it to move onto `GlassPanel` and
+the token system next, with the Loremaster's message bubble becoming the
+ornate "Grimoire card" (gold/arc accent) while the User's message bubble
+stays quiet.
