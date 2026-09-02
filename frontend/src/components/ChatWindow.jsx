@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import Message from "./Message"
+import GhostLoader from "./GhostLoader"
 
 function ChatWindow({ messages, isLoading }) {
     const bottomRef = useRef(null)
@@ -22,7 +23,7 @@ function ChatWindow({ messages, isLoading }) {
                 <div className="message message-loremaster">
                     <span className="message-role">Loremaster</span>
                     <div className="ghost-loader-container">
-                        <img src="/ghost2.png" alt="Ghost" className="ghost-loader" />
+                        <GhostLoader size={96} animated />
                     </div>
                 </div>
             )}

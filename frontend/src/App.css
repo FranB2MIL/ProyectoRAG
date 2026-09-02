@@ -195,31 +195,10 @@ body {
   padding: 0.5rem 1rem;
 }
 
-.ghost-loader {
-  width: 96px;
-  height: 96px;
-  image-rendering: pixelated;
-  animation: ghost-float 2s ease-in-out infinite;
-}
-
-@keyframes ghost-float {
-  0%   { transform: translateY(0px) rotate(0deg); }
-  25%  { transform: translateY(-8px) rotate(90deg); }
-  50%  { transform: translateY(0px) rotate(180deg); }
-  75%  { transform: translateY(-8px) rotate(270deg); }
-  100% { transform: translateY(0px) rotate(360deg); }
-}
-
 .header-content {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-.header-ghost {
-  width: 72px;
-  height: 72px;
-  image-rendering: pixelated;
 }
 
 .header-exit-btn {
@@ -253,9 +232,6 @@ body {
 }
 
 .landing-ghost {
-  width: 160px;
-  height: 160px;
-  image-rendering: pixelated;
   margin-bottom: 1rem;
 }
 

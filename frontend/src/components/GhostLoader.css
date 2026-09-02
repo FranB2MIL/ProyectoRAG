@@ -1,0 +1,26 @@
+.ghost-loader {
+  image-rendering: pixelated;
+  display: block;
+}
+
+.ghost-loader-animated {
+  animation: ghost-float 2s ease-in-out infinite;
+}
+
+@keyframes ghost-float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(90deg);
+  }
+  50% {
+    transform: translateY(0px) rotate(180deg);
+  }
+  75% {
+    transform: translateY(-8px) rotate(270deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg);
+  }
+}

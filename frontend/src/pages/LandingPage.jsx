@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
+import GhostLoader from "../components/GhostLoader"
 
 function LandingPage() {
   const navigate = useNavigate()
@@ -12,7 +13,7 @@ function LandingPage() {
       <div className="corner corner-bl"></div>
       <div className="corner corner-br"></div>
 
-      <img src="/ghost2.png" alt="Ghost" className="landing-ghost" />
+      <GhostLoader size={160} className="landing-ghost" />
 
       <h1 className="landing-title">Grimoires of Sol</h1>
       <div className="landing-divider"></div>
