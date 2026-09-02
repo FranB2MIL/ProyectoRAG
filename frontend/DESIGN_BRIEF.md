@@ -114,10 +114,20 @@ ad hoc elsewhere.
 
 ## Status
 
-The landing page (`LandingPage.jsx`) has been redesigned onto this system.
-The chat interface (`Header.jsx`, `Message.jsx`, `ChatInput.jsx`, `ChatWindow.jsx`)
-is a deliberate follow-up phase and still uses the previous dark/gold styling
-in `App.css` at the time of writing — expect it to move onto `GlassPanel` and
-the token system next, with the Loremaster's message bubble becoming the
-ornate "Grimoire card" (gold/arc accent) while the User's message bubble
-stays quiet.
+Both the landing page (`LandingPage.jsx`) and the chat interface (`Header.jsx`,
+`Message.jsx`, `ChatInput.jsx`, `ChatWindow.jsx`) are on this system.
+
+Notes specific to the chat interface:
+- The header and the chat input bar are translucent glass bars (blur + a
+  single hairline border) with **no** clip-path corners — they're edge-to-edge
+  chrome that touches the viewport bounds, not a floating card, so a diagonal
+  cut there would read as a rendering gap rather than a design flourish.
+- The Loremaster's message is the ornate "Grimoire card": an actual
+  `GlassPanel` with `accent="gold"` (lore content, per the token table). The
+  Guardian's (user) message stays a quiet, plain bordered bubble — arc
+  hairline, no blur — per the "one glow at a time" principle.
+- The pending "Loremaster is answering" placeholder and the send button both
+  use `emphasized`, but never at the same time in practice: the send button's
+  glow only turns on once there's text ready to send, and it's cleared the
+  moment a request goes out — so exactly one thing glows at once, and it
+  tracks the actual active state rather than being static.
