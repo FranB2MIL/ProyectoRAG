@@ -1,0 +1,19 @@
+:root {
+  /* Backgrounds */
+  --color-bg-base: #0a0e16;
+  --color-glass-surface: rgba(20, 27, 42, 0.55);
+  --blur-glass: 18px;
+
+  /* Accents */
+  --color-accent-solar: #ff6a2c;
+  --color-accent-arc: #3fd4e8;
+  --color-accent-gold: #d9b872;
+
+  /* Text */
+  --color-text-primary: #e7ecf4;
+  --color-text-secondary: #7a8699;
+
+  /* Fonts */
+  --font-ui: "Space Grotesk", "Rajdhani", system-ui, sans-serif;
+  --font-lore: "Spectral", "Source Serif 4", Georgia, serif;
+}
