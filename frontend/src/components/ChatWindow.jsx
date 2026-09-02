@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import Message from "./Message"
 import GhostLoader from "./GhostLoader"
+import GlassPanel from "./GlassPanel"
 
 function ChatWindow({ messages, isLoading }) {
     const bottomRef = useRef(null)
@@ -20,12 +21,12 @@ function ChatWindow({ messages, isLoading }) {
                 <Message key={index} message={message} />
             ))}
             {isLoading && (
-                <div className="message message-loremaster">
+                <GlassPanel accent="gold" emphasized cornerSize={16} className="message message-loremaster">
                     <span className="message-role">Loremaster</span>
                     <div className="ghost-loader-container">
                         <GhostLoader size={96} animated />
                     </div>
-                </div>
+                </GlassPanel>
             )}
             <div ref={bottomRef} />
         </div>
